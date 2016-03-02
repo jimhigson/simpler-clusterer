@@ -26,5 +26,16 @@
     "lodash.sumby": "^4.2.0",
     "sinon": "^1.17.3",
     "util-inspect": "^0.1.8"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jimhigson/simpler-clusterer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jimhigson/simpler-clusterer/issues"
+  },
+  "homepage": "https://github.com/jimhigson/simpler-clusterer#readme"
 }

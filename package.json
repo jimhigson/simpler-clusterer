@@ -1,0 +1,30 @@
+{
+  "name": "simple-clusterer",
+  "version": "1.0.0",
+  "description": "Highly customisable, generic, single-level clusterer that works for user interfaces and small-medium data sets",
+  "main": "simple-cluster.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "keywords": [
+    "cluster",
+    "analysis"
+  ],
+  "author": "Jim Higson",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "lodash.sortby": "^4.2.1",
+    "lodash.sortedindex": "^4.0.1",
+    "lodash.sortedindexby": "^4.2.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "karma": "^0.13.21",
+    "lodash.identity": "^3.0.0",
+    "lodash.merge": "^4.3.2",
+    "lodash.sum": "^4.0.2",
+    "lodash.sumby": "^4.2.0",
+    "sinon": "^1.17.3",
+    "util-inspect": "^0.1.8"
+  }
+}

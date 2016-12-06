@@ -1,6 +1,6 @@
 {
   "name": "simple-clusterer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Highly customisable, generic, single-level clusterer that works for user interfaces and small-medium data sets",
   "main": "simple-clusterer.js",
   "scripts": {

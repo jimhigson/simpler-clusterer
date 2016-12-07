@@ -29,21 +29,21 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
     var insert = elementOrder ? insertSorted : insertAtEnd;
 
     /**
-     * @param {T} data the data to be clustered
-     * @param {Number} the minimumDistance distance two clusters may be in the returned clusters
+     * @param {T} data the data to be clustered - can be any type
+     * @param {Number} the minimumDistance distance two clusters may be
      */
-    return function(data, minimumDistance) {
+    return function(data, minimumDistanceAllowedBetweenClusters) {
 
         var clusters = data.map(function(datum) {
             return {
                 elements: [datum],
-                position: position(datum, minimumDistance)
+                position: position(datum, minimumDistanceAllowedBetweenClusters)
             };
         });
 
         function closestElementsIndex() {
-            var minDistanceSeen = minimumDistance;
-            var closest = null;
+            var minDistanceSeen = minimumDistanceAllowedBetweenClusters;
+            var closest = [-1, -1];
 
             for( var i = 0; i < clusters.length; i++) {
                 for( var j = 0; j < i; j++) {
@@ -51,36 +51,47 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
                     var clusterI = clusters[i];
                     var clusterJ = clusters[j];
 
-                    var distanceBetweenElements = distance( clusterI.position, clusterJ.position, minimumDistance);
+                    var distanceBetweenElements = distance(
+                        clusterI.position,
+                        clusterJ.position,
+                        minimumDistanceAllowedBetweenClusters
+                    );
+
+                    if( distanceBetweenElements === 0 ) {
+                        // can exit early - will never find closer than zero distance:
+                        return [i, j];
+                    }
 
                     if( distanceBetweenElements < minDistanceSeen ) {
                         minDistanceSeen = distanceBetweenElements;
-                        closest = [i,j];
+                        closest[0] = i;
+                        closest[1] = j;
                     }
                 }
             }
 
-            return closest;
+            // if array still contains -1 we know that none were found:
+            return closest[0] === -1? null : closest;
         }
 
-        function conjoinAtIndex(mergeInto, mergeFrom) {
+        function conjoinClustersAtIndices(mergeInto, mergeFrom) {
 
             mergeFrom.elements.forEach(function(el) {
                 insert( mergeInto.elements, el );
             });
 
-            // update position of the updated simple-clusterer
-            mergeInto.position = mergePositions(mergeInto.elements.map(position), minimumDistance);
+            // update position of the updated cluster
+            mergeInto.position = mergePositions(mergeInto.elements.map(position), minimumDistanceAllowedBetweenClusters);
         }
 
         for(var closest; closest = closestElementsIndex();) {
             var closestA = clusters[closest[0]];
             var closestB = clusters[closest[1]];
 
-            // put everything from one simple-clusterer into the other
-            conjoinAtIndex(closestA, closestB);
+            // put everything from one cluster into the other
+            conjoinClustersAtIndices(closestA, closestB);
 
-            // remove the old simple-clusterer
+            // remove the old cluster
             clusters.splice(closest[1], 1);
         }
 

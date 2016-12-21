@@ -222,7 +222,7 @@ function toRecursivelyContain(util, customEqualityTesters) {
                 }
             }
 
-            return reduceTree(
+            var result = reduceTree(
                 expectedContents,
                 function testNode(expectedNode, expectedNodePath ){
 
@@ -256,10 +256,24 @@ function toRecursivelyContain(util, customEqualityTesters) {
                 function combineResults(resultA, resultB){
                     return {
                         pass: resultA.pass && resultB.pass,
-                        message: resultA.message || resultB.message
+                        message: (resultA.message || resultB.message)
                     };
                 }
             );
+
+            if( result.message ) {
+                result.message =
+                    'actual result:'.blue + inspect(actualObject) +
+                    '\ndid not conatain: '.blue +
+                    inspect(expectedContents) +'\nbecause: '.blue + result.message;
+            }
+            /*
+            result.message =
+                'expected '.blue + inspect( actualObject ) +
+                ' to contain '.blue + inspect( expectedContents ) +
+                ' ' + result.message; */
+
+            return result;
 
         }
     };

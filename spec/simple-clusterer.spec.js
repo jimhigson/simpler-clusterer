@@ -50,6 +50,13 @@ describe('clustering', function() {
             ]));
         });
 
+        it('finds two clusters when numbers given out of order', function() {
+            expect(this.numberClusterer([5,2,6,1.5, 1], 2)).toRecursivelyContain(clustersLike([
+                {elements:[1, 1.5,2], position:1.5},
+                {elements:[5,6], position:5.5}
+            ]));
+        });
+
         it('can find a large simple-clusterer while leaving two singletons', function() {
             expect(this.numberClusterer([1,3,4,5,9], 2)).toRecursivelyContain(clustersLike([
                 {elements:[1], position: 1},
@@ -97,6 +104,31 @@ describe('clustering', function() {
             ]));
         });
 
+        it('performs ok for large data', function() {
+            var test = ( testSize ) => {
+                var SEED = 42;
+                var chance = require('chance')(SEED);
+                var numbers = [];
+
+                for(var i = 0; i < testSize; i++) {
+                    numbers.push(chance.integer({min: 0, max: 5000}));
+                }
+
+                var startTime = Date.now();
+                var clusters = this.numberClusterer(numbers, 50);
+
+                console.log(
+                    `clustering ${numbers.length} random numbers into
+                    ${clusters.length} clusters took ${Date.now() - startTime}ms`);
+            }
+
+            test( 10 );
+            test( 100 );
+            test( 250 );
+            test( 500 );
+            test( 1000 );
+            test( 2000 );
+        });
 
 
     });

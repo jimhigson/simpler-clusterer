@@ -2,6 +2,8 @@
 
 var sortedIndexBy = require('lodash.sortedindexby')
 var sortBy = require('lodash.sortby')
+var SortedSet = require('collections/sorted-set')
+var List = require('collections/list')
 
 /**
  * Create a clusterer for clusters of type <T> at positions of type <P> ...
@@ -16,17 +18,33 @@ var sortBy = require('lodash.sortby')
  */
 module.exports = function (position, distance, mergePositions, elementOrder, clusterOrder) {
 
-    function insertSorted(elements, element) {
-        var insertIndex = sortedIndexBy(elements, element, elementOrder);
-        elements.splice(insertIndex, 0, element);
+    function referenceEquality(e1, e2) {
+        return e1 == e2;
     }
 
-    function insertAtEnd(elements, element) {
-        // we are unconcerned regarding order - add to the end of the array
-        elements.push(element);
+    function edgeCompare(e1, e2) {
+
+        var relativeDistance = e1.distance - e2.distance;
+        if( relativeDistance == 0 ) {
+            return e1.edgeIndex - e2.edgeIndex;
+        }
+        return relativeDistance;
     }
 
-    var insert = elementOrder ? insertSorted : insertAtEnd;
+    function edgesSet() {
+        return new SortedSet(
+            [],
+            referenceEquality, // we never create equal edges, so can use reference identity
+            edgeCompare
+        );
+    }
+
+    function clustersList( contents ) {
+        return new List(
+            contents,
+            referenceEquality // we never create equal clusters, so can use reference identity
+        );
+    }
 
     /**
      * @param {T} data the data to be clustered - can be any type
@@ -34,69 +52,85 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
      */
     return function(data, minimumDistanceAllowedBetweenClusters) {
 
-        var clusters = data.map(function(datum) {
-            return {
-                elements: [datum],
-                position: position(datum, minimumDistanceAllowedBetweenClusters)
+        var shortEdges = edgesSet();
+        var clusters = clustersList();
+        var edgeIndex = 0;
+
+        data.forEach( datumI => {
+
+            var clusterI = {
+                elements: [datumI],
+                position: position(datumI, minimumDistanceAllowedBetweenClusters),
+                edges: edgesSet()
             };
+
+            findShortEdgesFrom( clusterI );
+            clusters.push( clusterI );
         });
 
-        function closestElementsIndex() {
-            var minDistanceSeen = minimumDistanceAllowedBetweenClusters;
-            var closest = [-1, -1];
+        while( shortEdges.length > 0 ) {
+            var shortestEdge = shortEdges.shift();
 
-            for( var i = 0; i < clusters.length; i++) {
-                for( var j = 0; j < i; j++) {
+            conjoinClusters(shortestEdge.from, shortestEdge.to);
+        }
 
-                    var clusterI = clusters[i];
-                    var clusterJ = clusters[j];
+        function findShortEdgesFrom( subjectCluster ) {
+            clusters.forEach( otherCluster => {
 
-                    var distanceBetweenElements = distance(
-                        clusterI.position,
-                        clusterJ.position,
-                        minimumDistanceAllowedBetweenClusters
-                    );
+                let distanceBetweenElements = distance(
+                    subjectCluster.position,
+                    otherCluster.position,
+                    minimumDistanceAllowedBetweenClusters
+                );
 
-                    if( distanceBetweenElements === 0 && minimumDistanceAllowedBetweenClusters > 0 ) {
-                        // can exit early - will never find closer than zero distance:
-                        return [i, j];
-                    }
+                if( distanceBetweenElements < minimumDistanceAllowedBetweenClusters ) {
 
-                    if( distanceBetweenElements < minDistanceSeen ) {
-                        minDistanceSeen = distanceBetweenElements;
-                        closest[0] = i;
-                        closest[1] = j;
-                    }
+                    var edge = {
+                        from: subjectCluster,
+                        to: otherCluster,
+                        edgeIndex: ++edgeIndex,
+                        distance: distanceBetweenElements
+                    };
+
+                    shortEdges.push( edge );
+                    subjectCluster.edges.push( edge );
+                    otherCluster.edges.push( edge );
                 }
+            });
+        }
+
+        function conjoinClusters(clusterA, clusterB) {
+
+            var elementsFromBothClusters = clusterA.elements.concat( clusterB.elements );
+            var newCluster = {
+                elements: elementsFromBothClusters,
+                position: mergePositions(elementsFromBothClusters.map(position)),
+                edges: edgesSet()
+            };
+
+            shortEdges.deleteEach( clusterA.edges );
+            shortEdges.deleteEach( clusterB.edges );
+
+            clusters.delete(clusterA);
+            clusters.delete(clusterB);
+
+            findShortEdgesFrom( newCluster );
+
+            clusters.push(newCluster);
+        }
+
+        // clean up data that we don't need to be exported and convert into standard arrays:
+        var clustersArray = clusters.toArray()
+        clustersArray.forEach( c => {
+            if( elementOrder ) {
+                c.elements = sortBy( c.elements, elementOrder );
             }
 
-            // if array still contains -1 we know that none were found:
-            return closest[0] === -1? null : closest;
-        }
-
-        function conjoinClustersAtIndices(mergeInto, mergeFrom) {
-
-            mergeFrom.elements.forEach(function(el) {
-                insert( mergeInto.elements, el );
-            });
-
-            // update position of the updated cluster
-            mergeInto.position = mergePositions(mergeInto.elements.map(position), minimumDistanceAllowedBetweenClusters);
-        }
-
-        for(var closest; closest = closestElementsIndex();) {
-            var closestA = clusters[closest[0]];
-            var closestB = clusters[closest[1]];
-
-            // put everything from one cluster into the other
-            conjoinClustersAtIndices(closestA, closestB);
-
-            // remove the old cluster
-            clusters.splice(closest[1], 1);
-        }
+            delete c.edges
+        });
 
         return clusterOrder
-            ? sortBy(clusters, clusterOrder)
-            : clusters;
+            ? sortBy(clustersArray, clusterOrder)
+            : clustersArray;
     };
 };

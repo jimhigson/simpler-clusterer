@@ -57,17 +57,18 @@ Performance
 ===========
 
 Clustering random numbers, running on node 7.2.1 on a 2014 Macbook Pro. Performance is good for sizes up to
-about 250, and degrades quickly after 500. That seems a sensible maximum to load into an interface.
+about 500, and degrades quickly after 2000. That seems a sensible maximum to load into an interface.
 
 These results can be reproduced by running the tests.
 
 ```
-clustering 10 random numbers into 9 clusters took 1ms
-clustering 100 random numbers into 46 clusters took 10ms
-clustering 250 random numbers into 46 clusters took 22ms
-clustering 500 random numbers into 69 clusters took 54ms
-clustering 1000 random numbers into 67 clusters took 194ms
-clustering 2000 random numbers into 72 clusters took 955ms
+clustering 10 random numbers into 9 clusters took 0ms
+clustering 20 random numbers into 17 clusters took 1ms
+clustering 100 random numbers into 46 clusters took 6ms
+clustering 250 random numbers into 59 clusters took 10ms
+clustering 500 random numbers into 69 clusters took 30ms
+clustering 1000 random numbers into 67 clusters took 133ms
+clustering 2000 random numbers into 72 clusters took 725ms
 ```
 
 

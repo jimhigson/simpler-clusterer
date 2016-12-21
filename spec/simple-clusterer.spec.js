@@ -24,20 +24,20 @@ describe('clustering', function() {
             expect(this.numberClusterer([], 1)).toRecursivelyContain(clustersLike([]));
         });
 
-        it('creates a single simple-clusterer from singleton list', function() {
+        it('creates a single cluster from singleton list', function() {
             expect(this.numberClusterer([2], 1)).toRecursivelyContain([
                 {elements:[2], position: 2}
             ]);
         });
 
-        it('can create a single simple-clusterer while leaving another point as a singleton', function() {
+        it('can create a single cluster while leaving another point as a singleton', function() {
             expect(this.numberClusterer([1,2,5], 2)).toRecursivelyContain(clustersLike([
                 {elements:[1,2], position:1.5},
                 {elements:[5], position:5}
             ]));
         });
 
-        it('can bunch all datums into a single simple-clusterer', function() {
+        it('can bunch all datums into a single cluster', function() {
             expect(this.numberClusterer([1,2,5], 4)).toRecursivelyContain(clustersLike([
                 {elements:[1,2,5], position:8/3}
             ]));
@@ -123,6 +123,7 @@ describe('clustering', function() {
             }
 
             test( 10 );
+            test( 20 );
             test( 100 );
             test( 250 );
             test( 500 );

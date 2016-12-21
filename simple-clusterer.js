@@ -1,9 +1,9 @@
 'use strict';
 
-var sortedIndexBy = require('lodash.sortedindexby')
 var sortBy = require('lodash.sortby')
 var SortedSet = require('collections/sorted-set')
 var List = require('collections/list')
+var ColSet = require('collections/set')
 
 /**
  * Create a clusterer for clusters of type <T> at positions of type <P> ...
@@ -46,6 +46,29 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
         );
     }
 
+    function Cluster(elements, position) {
+        this.elements = elements;
+        this.position = position;
+        this.edges = [];
+    }
+    Cluster.prototype.removeLinksToCluster = function( c ) {
+        this.edges = this.edges.filter( e => !e.mentions(c) )
+    };
+
+    var edgeIndex = 0;
+    function Edge(from, to, distance) {
+        this.from = from;
+        this.to = to;
+        this.distance = distance;
+        this.edgeIndex = ++edgeIndex;
+    }
+    Edge.prototype.oppositeSideTo = function( node ) {
+        return this.to == node? this.from: this.to;
+    };
+    Edge.prototype.mentions = function( node ) {
+        return this.from == node || this.to == node;
+    };
+
     /**
      * @param {T} data the data to be clustered - can be any type
      * @param {Number} the minimumDistance distance two clusters may be
@@ -54,67 +77,81 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
 
         var shortEdges = edgesSet();
         var clusters = clustersList();
-        var edgeIndex = 0;
 
         data.forEach( datumI => {
 
-            var clusterI = {
-                elements: [datumI],
-                position: position(datumI, minimumDistanceAllowedBetweenClusters),
-                edges: edgesSet()
-            };
+            var clusterI = new Cluster([datumI], position(datumI));
 
-            findShortEdgesFrom( clusterI );
+            findShortEdgesFrom( clusterI, clusters );
             clusters.push( clusterI );
         });
 
         while( shortEdges.length > 0 ) {
+
             var shortestEdge = shortEdges.shift();
 
             conjoinClusters(shortestEdge.from, shortestEdge.to);
         }
 
-        function findShortEdgesFrom( subjectCluster ) {
-            clusters.forEach( otherCluster => {
-
-                let distanceBetweenElements = distance(
-                    subjectCluster.position,
-                    otherCluster.position,
-                    minimumDistanceAllowedBetweenClusters
-                );
-
-                if( distanceBetweenElements < minimumDistanceAllowedBetweenClusters ) {
-
-                    var edge = {
-                        from: subjectCluster,
-                        to: otherCluster,
-                        edgeIndex: ++edgeIndex,
-                        distance: distanceBetweenElements
-                    };
-
-                    shortEdges.push( edge );
-                    subjectCluster.edges.push( edge );
-                    otherCluster.edges.push( edge );
-                }
+        function findShortEdgesFrom( subjectCluster, clustersToSearchIn ) {
+            clustersToSearchIn.forEach( otherCluster => {
+                compareClusters( subjectCluster, otherCluster)
             });
+        }
+
+        function compareClusters(clusterA, clusterB) {
+            let distanceBetweenElements = distance(
+                clusterA.position,
+                clusterB.position
+            );
+
+            if( distanceBetweenElements < minimumDistanceAllowedBetweenClusters ) {
+
+                var edge = new Edge(clusterA, clusterB, distanceBetweenElements);
+
+                shortEdges.push( edge );
+                clusterA.edges.push( edge );
+                clusterB.edges.push( edge );
+            }
+        }
+
+        function deleteCluster(c) {
+            shortEdges.deleteEach( c.edges );
+            clusters.delete(c);
+
+            // remove links back to this one
+            c.edges.forEach(
+                e => e.oppositeSideTo(c).removeLinksToCluster(c)
+            );
         }
 
         function conjoinClusters(clusterA, clusterB) {
 
             var elementsFromBothClusters = clusterA.elements.concat( clusterB.elements );
-            var newCluster = {
-                elements: elementsFromBothClusters,
-                position: mergePositions(elementsFromBothClusters.map(position)),
-                edges: edgesSet()
-            };
+            var newCluster = new Cluster(
+                elementsFromBothClusters,
+                mergePositions(elementsFromBothClusters.map(position))
+            );
 
-            shortEdges.deleteEach( clusterA.edges );
-            shortEdges.deleteEach( clusterB.edges );
+            deleteCluster(clusterA);
+            deleteCluster(clusterB);
 
-            clusters.delete(clusterA);
-            clusters.delete(clusterB);
+            let clustersToScanForNewEdges = new ColSet( null, referenceEquality );
 
-            findShortEdgesFrom( newCluster );
+            function considerEdgesFrom( thisCluster, ignoreCluster ) {
+                thisCluster.edges.forEach( edgeFromThisCluster => {
+                    var clusterAtOtherEndOfEdge = edgeFromThisCluster.oppositeSideTo(thisCluster);
+
+                    if( clusterAtOtherEndOfEdge != ignoreCluster ) {
+                        clustersToScanForNewEdges.add( clusterAtOtherEndOfEdge )
+                    }
+                });
+            }
+
+            considerEdgesFrom(clusterA, clusterB);
+            considerEdgesFrom(clusterB, clusterA);
+
+            findShortEdgesFrom( newCluster, clustersToScanForNewEdges );
 
             clusters.push(newCluster);
         }

@@ -1,7 +1,15 @@
 'use strict';
 
-var _ = require('lodash');
+var isObject = require('lodash.isobject');
+var isDate = require('lodash.isdate');
+var isArray = require('lodash.isarray');
+var isNumber = require('lodash.isnumber');
+var isNan = require('lodash.isnan');
+var includes = require('lodash.includes');
+var contains = require('lodash.contains');
+var reduce = require('lodash.reduce');
 var inspect = require('./inspect.js');
+var _ = require('lodash');
 require('colors');
 
 var NOT_FOUND = {};
@@ -74,7 +82,7 @@ function reduceTree(value, transform, combine, ignoreKeys) {
 
     function _reduceTree(value, path) {
 
-        var isBranch = _.isObject(value) && !_.isDate(value);
+        var isBranch = isObject(value) && !isDate(value);
         var recursiveResults;
 
         if( isBranch ) {
@@ -88,19 +96,19 @@ function reduceTree(value, transform, combine, ignoreKeys) {
                     .map(function(childValue, childKey) {
                         var childPath;
 
-                        var isCircular = _.includes(branchesSeen, childValue);
+                        var isCircular = includes(branchesSeen, childValue);
                         if(isCircular) {
                             return CIRCULAR_REFERENCE;
                         }
 
-                        var isIgnored = _.includes(ignoreKeys, childKey);
+                        var isIgnored = includes(ignoreKeys, childKey);
                         if( isIgnored ) {
                             return IGNORED_REFERENCE;
                         }
 
-                        if(_.isArray(value) && value.__orderInsensitive) {
+                        if(isArray(value) && value.__orderInsensitive) {
                             for(var i = 0; i < value.length; i++) {
-                                if(_.contains(usedIndices, i)) {
+                                if(contains(usedIndices, i)) {
                                     continue;
                                 }
 
@@ -129,7 +137,7 @@ function reduceTree(value, transform, combine, ignoreKeys) {
                     .value();
 
             // combine those results into a single composite result
-            return _.reduce(recursiveResults, combine, transform(value, path));
+            return reduce(recursiveResults, combine, transform(value, path));
 
         } else {
             return transform(value, path);
@@ -139,9 +147,9 @@ function reduceTree(value, transform, combine, ignoreKeys) {
 
 function pickAt(obj, path) {
 
-    return _.reduce(path, function(soFar, nextPathElement){
+    return reduce(path, function(soFar, nextPathElement){
 
-        if( !_.isObject(soFar) || soFar === NOT_FOUND || !soFar.hasOwnProperty(nextPathElement) ) {
+        if( !isObject(soFar) || soFar === NOT_FOUND || !soFar.hasOwnProperty(nextPathElement) ) {
             return NOT_FOUND;
         }
 
@@ -161,13 +169,13 @@ function toRecursivelyContain(util, customEqualityTesters) {
                 }
 
                 return inspect('(root)' + path.map(function(p){
-                        if(_.isNumber(p)) {
+                        if(isNumber(p)) {
 
                             return '[' + p + ']';
 
                         } else {
 
-                            if(_.isNaN(parseInt(p))){
+                            if(isNaN(parseInt(p))){
                                 return '.' + p;
                             } else {
                                 return '["' + p + '"]';
@@ -178,7 +186,7 @@ function toRecursivelyContain(util, customEqualityTesters) {
             }
 
             function testArray(actual, expected, path) {
-                if( !_.isArray( actual ) ) {
+                if( !isArray( actual ) ) {
 
                     return failure(
                         'expected ' + 'Array'.cyan + ' at ' +
@@ -198,7 +206,7 @@ function toRecursivelyContain(util, customEqualityTesters) {
             }
 
             function testObject(actual, expected, path) {
-                if( !_.isObject( actual ) ) {
+                if( !isObject( actual ) ) {
                     return failure('expected ' + 'Object'.cyan + ' at ' + describePath(path));
                 }
             }
@@ -224,12 +232,12 @@ function toRecursivelyContain(util, customEqualityTesters) {
                         return failure('has nothing at path ' + describePath(expectedNodePath));
                     }
 
-                    var isPlainObject = _.isObject(expectedNode) && !_.isDate(expectedNode) && !_.isArray(expectedNode);
+                    var isPlainObject = isObject(expectedNode) && !isDate(expectedNode) && !isArray(expectedNode);
                     var test;
 
                     if(isPlainObject) {
                         test = testObject;
-                    } else if (_.isArray(expectedNode)) {
+                    } else if (isArray(expectedNode)) {
                         test = testArray;
                     } else {
                         test = testScalar;
@@ -290,9 +298,9 @@ function toContainAnywhere(util, customEqualityTesters) {
     return {
         compare: function (actualObject /*, expectedContents1 , expectedContents2, expectedContents3... */) {
 
-            var conditions = parseConditions(_.toArray(arguments).slice(1));
+            var conditions = parseConditions(toArray(arguments).slice(1));
 
-            return _.reduce( conditions.expectedContents, function(acc, expectedContent) {
+            return reduce( conditions.expectedContents, function(acc, expectedContent) {
 
                 var contentResult = reduceTree(
                     actualObject,

@@ -1,5 +1,6 @@
 
 var sum = require('lodash.sum')
+var sumBy = require('lodash.sumby')
 var identity = require('lodash.identity')
 
 describe('clustering', function() {
@@ -131,7 +132,7 @@ describe('clustering', function() {
                 return sum(positions) / positions.length;
             }
             var orderInCluster = identity;
-            var orderBetweenClusters = c => c.position;
+            var orderBetweenClusters = function(c) { return c.position }
 
             this.sortedNumberClusterer = require('../simple-clusterer.js')
             (position, distance, merge, orderInCluster, orderBetweenClusters);
@@ -156,9 +157,10 @@ describe('clustering', function() {
             };
 
             this.mergePositions = function(positions) {
+
                 return {
-                    x: sum(positions, 'x') / positions.length,
-                    y: sum(positions, 'y') / positions.length
+                    x: sumBy(positions, 'x') / positions.length,
+                    y: sumBy(positions, 'y') / positions.length
                 };
             };
 
@@ -173,7 +175,7 @@ describe('clustering', function() {
             ];
         });
 
-        it('can lump into a single simple-clusterer', function() {
+        it('can lump into a single cluster', function() {
             var result = this.thingClusterer(this.things, sq(100)); // distance squared, so really 100
 
             expect(

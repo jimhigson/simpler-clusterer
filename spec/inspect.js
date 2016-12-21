@@ -2,7 +2,7 @@
 
 require('colors');
 var merge = require('lodash.merge');
-var utilInspectOptions = {colors: true, depth: 2};
+var utilInspectOptions = {colors: true, depth: 3};
 var utilInspect = require('util-inspect');
 
 var inspect = function(thing, options) {

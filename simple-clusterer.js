@@ -1,7 +1,7 @@
 'use strict';
 
 var sortedIndexBy = require('lodash.sortedindexby')
-var sortBy = require('lodash.sortBy')
+var sortBy = require('lodash.sortby')
 
 /**
  * Create a clusterer for clusters of type <T> at positions of type <P> ...
@@ -57,7 +57,7 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
                         minimumDistanceAllowedBetweenClusters
                     );
 
-                    if( distanceBetweenElements === 0 ) {
+                    if( distanceBetweenElements === 0 && minimumDistanceAllowedBetweenClusters > 0 ) {
                         // can exit early - will never find closer than zero distance:
                         return [i, j];
                     }

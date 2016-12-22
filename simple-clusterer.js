@@ -52,7 +52,7 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
         this.edges = [];
     }
     Cluster.prototype.removeLinksToCluster = function( c ) {
-        this.edges = this.edges.filter( e => !e.mentions(c) )
+        this.edges = this.edges.filter( function( e ) { return !e.mentions(c) } )
     };
 
     var edgeIndex = 0;
@@ -78,7 +78,7 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
         var shortEdges = edgesSet();
         var clusters = clustersList();
 
-        data.forEach( datumI => {
+        data.forEach( function( datumI ) {
 
             var clusterI = new Cluster([datumI], position(datumI));
 
@@ -94,13 +94,13 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
         }
 
         function findShortEdgesFrom( subjectCluster, clustersToSearchIn ) {
-            clustersToSearchIn.forEach( otherCluster => {
-                compareClusters( subjectCluster, otherCluster)
+            clustersToSearchIn.forEach( function( otherCluster ) {
+                return compareClusters( subjectCluster, otherCluster)
             });
         }
 
         function compareClusters(clusterA, clusterB) {
-            let distanceBetweenElements = distance(
+            var distanceBetweenElements = distance(
                 clusterA.position,
                 clusterB.position
             );
@@ -120,9 +120,9 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
             clusters.delete(c);
 
             // remove links back to this one
-            c.edges.forEach(
-                e => e.oppositeSideTo(c).removeLinksToCluster(c)
-            );
+            c.edges.forEach( function( e ) {
+                return e.oppositeSideTo(c).removeLinksToCluster(c)
+            });
         }
 
         function conjoinClusters(clusterA, clusterB) {
@@ -136,10 +136,10 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
             deleteCluster(clusterA);
             deleteCluster(clusterB);
 
-            let clustersToScanForNewEdges = new ColSet( null, referenceEquality );
+            var clustersToScanForNewEdges = new ColSet( null, referenceEquality );
 
             function considerEdgesFrom( thisCluster, ignoreCluster ) {
-                thisCluster.edges.forEach( edgeFromThisCluster => {
+                thisCluster.edges.forEach( function( edgeFromThisCluster ) {
                     var clusterAtOtherEndOfEdge = edgeFromThisCluster.oppositeSideTo(thisCluster);
 
                     if( clusterAtOtherEndOfEdge != ignoreCluster ) {
@@ -158,7 +158,7 @@ module.exports = function (position, distance, mergePositions, elementOrder, clu
 
         // clean up data that we don't need to be exported and convert into standard arrays:
         var clustersArray = clusters.toArray()
-        clustersArray.forEach( c => {
+        clustersArray.forEach( function( c ) {
             if( elementOrder ) {
                 c.elements = sortBy( c.elements, elementOrder );
             }
